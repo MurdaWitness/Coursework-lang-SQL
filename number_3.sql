@@ -70,8 +70,7 @@ begin
 	return ifnull(s, 0);
 end//
 delimiter ;
-
-select * from `Книги заказов`;
+/*Вызов процедуры*/
 select getCount('222334');
 
 /*3.*/
@@ -81,27 +80,29 @@ begin
 update `Заказы` set `Количество книг в заказе` = getCount(`№ заказа`);
 end//
 delimiter ;
-
+/*Вызов процедуры*/
 call setCount();
 select * from `Заказы`;
 
 /*4.*/
-delimiter // 
-create procedure `setCursor`() 
+delimiter //
+create procedure `setCursor`()
 begin
-    declare num, s, b int default 0; 
-	declare curs cursor for select `№ заказа`, count(`№ заказа`) from `Книги заказов` group by `№ заказа`;
-    declare continue handler for not found set b = 1; 
-    update `Заказы` set `Количество книг в заказе` = 0;
-	open curs; 
-    while b = 0 do 
-        fetch curs into num, s; 
-		update `Заказы` set `Количество книг в заказе` = s where `№ заказа` = num;
-    end while; 
-    close curs; 
-end// 
+declare num, s, b int default 0;
+declare curs cursor for select `№ заказа`, sum(`Количество`) 
+from `Книги заказов` group by `№ заказа`;
+declare continue handler for not found set b = 1;
+update `Заказы` set `Количество книг в заказе` = 0;
+open curs;
+while b = 0 do
+fetch curs into num, s;
+update `Заказы` set `Количество книг в заказе` = s 
+where `№ заказа` = num;
+end while;
+close curs;
+end//
 delimiter ;
-
+/*Вызов процедуры*/
 call setCursor();
 select * from `Заказы`;
 
@@ -113,12 +114,11 @@ begin
     `Количество книг в заказе` - old.`Количество` where `№ заказа` = old.`№ заказа`;
 end//
 delimiter ;
-
+/*Осуществление действия для срабатывания триггера*/
 delete from `Книги заказов` 
 where `№ заказа` = 432152 and `ISBN` = '978-5-388-00003' and `Количество` = 1;
-
+/*Результат работы триггера*/
 select * from `Заказы`;
-select * from `Книги заказов`;
 
 /*6.*/
 delimiter //
@@ -128,13 +128,12 @@ begin
     `Количество книг в заказе` + new.`Количество` where `№ заказа` = new.`№ заказа`;
 end//
 delimiter ;
-
+/*Осуществление действия для срабатывания триггера*/
 insert into `Книги заказов`(`№ заказа`, `ISBN`, `Количество`)
 values
 (432152, '978-5-388-00003', 1);
-
+/*Результат работы триггера*/
 select * from `Заказы`;
-select * from `Книги заказов`;
 
 /*7.*/
 delimiter //
@@ -146,11 +145,10 @@ begin
     `Количество книг в заказе` + new.`Количество` where `№ заказа` = new.`№ заказа`;
 end//
 delimiter ;
-
+/*Осуществление действия для срабатывания триггера*/
 update `Книги заказов` set `Количество` = 3 where `№ заказа` = 432152;
-
+/*Результат работы триггера*/
 select * from `Заказы`;
-select * from `Книги заказов`;
 
 /*8*/
 drop user if exists 'administrator'@'localhost';
@@ -170,7 +168,8 @@ grant create, drop on number_3 to 'administrator'@'localhost';
 flush privileges;
 
 /*10*/
-grant all privileges on number_3 to 'director'@'localhost';
+grant all privileges on number_3 to 'director'@'localhost'
+with grant option;
 revoke create, drop, alter on number_3 from 'director'@'localhost';
 flush privileges;
 
